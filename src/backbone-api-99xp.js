@@ -97,12 +97,12 @@ var extended = {
     // used to call api and trigger callbacks accordingly
     callApi(method, methodData, success, error) {
         this.setApiCall(methodData);
-
         var o = {
             method: methodData.method,
             data: this.getMethodInput(methodData),
             headers: _.result2(methodData, 'headers', {}, [methodData], this)
         };
+
         if (!methodData.public) {
             o = this.setAuthHeader(o);
         }
@@ -112,6 +112,7 @@ var extended = {
             }, this),
             save = _.bind(_.partial((_method, _methodData, _success, _error, _o) => {
                 this.listenToOnce(this, 'sync', _.bind(() => {
+                    this.stopListening(this);
                     this.data[_method] = this.attributes;
                     this.attributes = {};
 
@@ -119,42 +120,44 @@ var extended = {
                         typeof _methodData.success === 'function' && _.bind(_methodData.success, this)(_o, this._req.body, _methodData);
                         typeof _success === 'function' && _.bind(_success, this)(_o, this._req.body, _methodData);
                     } catch (e) {
-                        // console.error('Internal Failure');
+                        // console.error('Internal Failure 1');
                         // console.error(e);
                         this._res.status(500).send({
-                            message: 'Internal Failure'
+                            message: 'Internal Failure (1)'
                         });
                     }
                 }, this));
                 this.listenToOnce(this, 'error', _.bind(() => {
-                    // !this._reqErr.response && console.error('Internal Failure');
+                    this.stopListening(this);
+                    // !this._reqErr.response && console.error('Internal Failure 2');
                     try {
+                        // console.error('Internal Failure 2a');
+                        // console.log(this._reqErr.response ? this._reqErr.response.status : 500);
+                        // console.log(this._reqErr.response ? this._reqErr.response.data : null);
                         typeof _methodData.error === 'function' && _.bind(_methodData.error, this)(this._reqErr.response, _o, this._req.body, _methodData);
-                        typeof _error === 'function' ? _.bind(_error, this)(this._reqErr.response || null, _o, this._req.body, _methodData) : 
+                        typeof _error === 'function' ? _.bind(_error, this)(this._reqErr.response || null, _o, this._req.body, _methodData) :
                             !this._res._headerSent && this._res.status(this._reqErr.response ? this._reqErr.response.status : 500).send(this._reqErr.response ? this._reqErr.response.data : null);
                     } catch (e) {
-                        // console.error('Internal Failure');
+                        // console.error('Internal Failure 3');
                         // console.error(e);
                         this._res.status(500).send({
-                            message: 'Internal Failure'
+                            message: 'Internal Failure (2)'
                         });
                     }
                 }, this));
-
                 this.save(null, _o);
             }, method, methodData, success, error), this);
 
         try {
             before(save, o);
         } catch (e) {
-            // console.error('Internal Failure');
+            // console.error('Internal Failure 4');
             // console.log(e);
             this._res.status(500).send({
-                message: 'Internal Failure'
+                message: 'Internal Failure (4)'
             });
         }
     },
-    test: false,
     // getter for methods data. ensure data for method asked is set
     methodData(method) {
         if (!method || !_.result(this, 'methods')[method]) {
