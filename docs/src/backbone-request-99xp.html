@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html class="dark">
+    <head>
+        <title>backbone-request-99xp.js</title>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <link rel="stylesheet" media="all" href="/public/stylesheets/normalize.css" />
+        <link rel="stylesheet" media="all" href="../docco.css" />
+        <link rel="stylesheet" media="all" href="https://public.99xp.org/styles/color-modes.css" />
+        <link rel="stylesheet" media="all" href="https://public.99xp.org/styles/design.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="page">
+
+                <div class="header">
+                    <small class="color-modes">
+                        <a href="#" class="color-mode dark" onclick="event.preventDefault(); document.getElementsByTagName('html')[0].classList.add('dark'); document.getElementsByTagName('html')[0].classList.remove('light')">&nbsp;</a>
+                        &nbsp;&nbsp;&nbsp;
+                        <a href="#" class="color-mode light" onclick="event.preventDefault(); document.getElementsByTagName('html')[0].classList.remove('dark'); document.getElementsByTagName('html')[0].classList.add('light')">&nbsp;</a>
+                    </small>
+                    
+                    <h1>backbone-request-99xp.js</h1>
+                    
+
+                    
+                </div>
+
+                
+                    
+                    <p><a href="https://github.com/brunnofoggia/backbone-request-99xp">backbone-request-99xp</a> is an integration that makes possible to use
+<a href="https://backbonejs.org">backbone</a> with promises in nodejs. That’s done by integrating it with <a href="https://github.com/axios/axios">axios</a>.</p>
+
+                    
+                    
+                    
+                    <h2 id="examples">Examples</h2>
+
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    <p>Considere this Model as base for the examples</p>
+<pre><code><span class="hljs-keyword">var</span> Model = bbr.Model.extend({
+    <span class="hljs-attr">urlRoot</span>: <span class="hljs-string">'https://tapi.99xp.org/crud/test'</span>
+}),</code></pre>
+                    
+                    
+                    
+                    <ul>
+<li><p>getting row </p>
+<ol>
+<li><p>with listener</p>
+<pre><code>model = <span class="hljs-keyword">new</span> Model({<span class="hljs-attr">id</span>: <span class="hljs-number">35</span>});
+model.once(<span class="hljs-string">'sync'</span>, ()=&gt;{
+    <span class="hljs-built_in">console</span>.log(model.attributes);
+});
+model.fetch({<span class="hljs-attr">headers</span>: {...}});</code></pre></li>
+<li><p>with promise</p>
+<pre><code>model = <span class="hljs-keyword">new</span> Model({<span class="hljs-attr">id</span>: <span class="hljs-number">35</span>});
+<span class="hljs-keyword">return</span> model.fetchp(<span class="hljs-function">(<span class="hljs-params">m, o, resolve, reject</span>) =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(m.attributes);
+    resolve();
+}, {<span class="hljs-attr">headers</span>: {...}});</code></pre></li>
+</ol>
+</li>
+<li><p>inserting row </p>
+<ol>
+<li><p>with listener</p>
+<pre><code>model = <span class="hljs-keyword">new</span> Model({<span class="hljs-attr">name</span>: <span class="hljs-string">'new person'</span>, <span class="hljs-attr">age</span>: <span class="hljs-number">10</span>});
+model.once(<span class="hljs-string">'sync'</span>, ()=&gt;{
+    <span class="hljs-built_in">console</span>.log(model.attributes);
+});
+model.save();</code></pre></li>
+<li><p>with promise</p>
+<pre><code>model = <span class="hljs-keyword">new</span> Model({<span class="hljs-attr">name</span>: <span class="hljs-string">'new person'</span>, <span class="hljs-attr">age</span>: <span class="hljs-number">10</span>});
+<span class="hljs-keyword">return</span> model.savep(<span class="hljs-function">(<span class="hljs-params">m, o, resolve, reject</span>) =&gt;</span> {
+    <span class="hljs-built_in">console</span>.log(m.attributes);
+    resolve();
+});</code></pre></li>
+</ol>
+</li>
+</ul>
+
+                    
+                    
+                    
+                    <h2 id="code-documented-below">CODE DOCUMENTED BELOW</h2>
+
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    <hr>
+
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    <h2 id="baseline-setup">Baseline setup</h2>
+
+                    
+                    
+                    
+                    
+                    
+                    <div class='highlight'><pre><span class="hljs-keyword">import</span> Backbone <span class="hljs-keyword">from</span> <span class="hljs-string">'backbone'</span>;
+<span class="hljs-keyword">import</span> _ <span class="hljs-keyword">from</span> <span class="hljs-string">'underscore-99xp'</span>;
+<span class="hljs-keyword">import</span> axios <span class="hljs-keyword">from</span> <span class="hljs-string">'axios'</span>;
+
+<span class="hljs-comment">/* templater settings */</span>
+_.templateSettings = {
+    <span class="hljs-attr">interpolate</span>: <span class="hljs-regexp">/\{\{(.+?)\}\}/g</span>,
+    evaluate: <span class="hljs-regexp">/\{\%(.+?)\%\}/g</span>,
+    <span class="hljs-built_in">escape</span>: <span class="hljs-regexp">/\{-([\s\S]+?)-\}/g</span>
+};
+
+<span class="hljs-keyword">var</span> BackboneRequest = _.clone(Backbone);
+
+BackboneRequest.VERSION = <span class="hljs-string">'0.1.0'</span>;</pre></div>
+                    
+                    
+                    
+                    <p>Turn on <code>emulateHTTP</code> to support legacy HTTP servers. Setting this option
+will fake <code>&quot;PATCH&quot;</code>, <code>&quot;PUT&quot;</code> and <code>&quot;DELETE&quot;</code> requests via the <code>_method</code> parameter and
+set a <code>X-Http-Method-Override</code> header.</p>
+
+                    
+                    <div class='highlight'><pre>BackboneRequest.emulateHTTP = <span class="hljs-literal">false</span>;</pre></div>
+                    
+                    
+                    
+                    <p>Turn on <code>emulateJSON</code> to support legacy servers that can’t deal with direct
+<code>application/json</code> requests … this will encode the body as
+<code>application/x-www-form-urlencoded</code> instead and will send the model in a
+form param named <code>model</code>.</p>
+
+                    
+                    <div class='highlight'><pre>BackboneRequest.emulateJSON = <span class="hljs-literal">false</span>;</pre></div>
+                    
+                    
+                    
+                    <p>Sync engine modeled over default backbone.js ajax syncing engine
+It will make model rest methods to work for both, node and browser</p>
+
+                    
+                    <div class='highlight'><pre>BackboneRequest.sync = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">method, model, options</span>) </span>{
+    <span class="hljs-keyword">var</span> type = methodMap[method];</pre></div>
+                    
+                    
+                    
+                    <p>Default options, unless specified.</p>
+
+                    
+                    <div class='highlight'><pre>    _.defaults(options || (options = {}), {
+        <span class="hljs-attr">emulateHTTP</span>: BackboneRequest.emulateHTTP,
+        <span class="hljs-attr">emulateJSON</span>: BackboneRequest.emulateJSON,
+        <span class="hljs-attr">headers</span>: {}
+    });</pre></div>
+                    
+                    
+                    
+                    <p>Default JSON-request options.</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">var</span> params = _.extend({}, options, {
+        <span class="hljs-attr">type</span>: type,
+        <span class="hljs-attr">dataType</span>: <span class="hljs-string">'json'</span>
+    });</pre></div>
+                    
+                    
+                    
+                    <p>Ensure that we have a URL.</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">if</span> (!options.url) {
+        params.url = _.result(model, <span class="hljs-string">'url'</span>) || BackboneRequest.urlError();
+    }</pre></div>
+                    
+                    
+                    
+                    <p>Ensure that we have the appropriate request data.</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">if</span> (options.data == <span class="hljs-literal">null</span> &amp;&amp; model &amp;&amp; (method === <span class="hljs-string">'create'</span> || method === <span class="hljs-string">'update'</span> || method === <span class="hljs-string">'patch'</span>)) {
+        params.contentType = <span class="hljs-string">'application/json'</span>;
+        params.data = <span class="hljs-built_in">JSON</span>.stringify(options.attrs || model.toJSON(options));
+    }</pre></div>
+                    
+                    
+                    
+                    <p>For older servers, emulate JSON by encoding the request into an HTML-form.</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">if</span> (options.emulateJSON) {
+        params.contentType = <span class="hljs-string">'application/x-www-form-urlencoded'</span>;
+        params.data = params.data ? {
+            <span class="hljs-attr">model</span>: params.data
+        } : {};
+    }</pre></div>
+                    
+                    
+                    
+                    <p>For older servers, emulate HTTP by mimicking the HTTP method with <code>_method</code>
+And an <code>X-HTTP-Method-Override</code> header.</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">if</span> (options.emulateHTTP &amp;&amp; (type === <span class="hljs-string">'PUT'</span> || type === <span class="hljs-string">'DELETE'</span> || type === <span class="hljs-string">'PATCH'</span>)) {
+        params.type = <span class="hljs-string">'POST'</span>;
+        <span class="hljs-keyword">if</span> (options.emulateJSON) {
+            params.data._method = type;
+        }
+        params.headers[<span class="hljs-string">'X-HTTP-Method-Override'</span>] = type;
+    }</pre></div>
+                    
+                    
+                    
+                    <p>Don’t process data on a non-GET request.</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">if</span> (params.type !== <span class="hljs-string">'GET'</span> &amp;&amp; !options.emulateJSON) {
+        params.processData = <span class="hljs-literal">false</span>;
+    }</pre></div>
+                    
+                    
+                    
+                    <p>Request &amp; Parse engine</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">var</span> reqOpts = _.extend({
+        <span class="hljs-attr">url</span>: params.url,
+        <span class="hljs-attr">method</span>: params.type,
+        <span class="hljs-attr">headers</span>: params.headers
+    }, _.pick(params, <span class="hljs-string">'data'</span>), _.omit(options, <span class="hljs-string">'type'</span>, <span class="hljs-string">'dataType'</span>, <span class="hljs-string">'emulateHTTP'</span>, <span class="hljs-string">'emulateJSON'</span>));
+
+    reqOpts.headers[<span class="hljs-string">'content-type'</span>] = params.contentType || <span class="hljs-string">'application/json'</span>;</pre></div>
+                    
+                    
+                    
+                    <p>Promise calls</p>
+
+                    
+                    <div class='highlight'><pre>    reqOpts.then = _.partial(<span class="hljs-function">(<span class="hljs-params">m, o, response</span>) =&gt;</span> {
+        <span class="hljs-keyword">typeof</span> o.success === <span class="hljs-string">'function'</span> &amp;&amp; o.success(response.data);
+    }, <span class="hljs-keyword">this</span>, options);
+    reqOpts.catch = _.bind(_.partial(<span class="hljs-function">(<span class="hljs-params">m, o, err</span>) =&gt;</span> {
+        <span class="hljs-keyword">this</span>._reqErr = err;
+        <span class="hljs-keyword">typeof</span> o.error === <span class="hljs-string">'function'</span> &amp;&amp; o.error(err);
+    }, <span class="hljs-keyword">this</span>, options), <span class="hljs-keyword">this</span>);
+
+
+    <span class="hljs-keyword">return</span> BackboneRequest.exec(reqOpts);
+};</pre></div>
+                    
+                    
+                    
+                    <p>Format data for request</p>
+
+                    
+                    <div class='highlight'><pre>BackboneRequest.exec = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">options, req = null, res = null</span>) </span>{
+    <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> options.url !== <span class="hljs-string">'string'</span> ||</pre></div>
+                    
+                    
+                    
+                    <p>Accept to execute http requests without receiving res object if callbacks are present in options</p>
+
+                    
+                    <div class='highlight'><pre>        (!res &amp;&amp; _.size(_.pick(options, <span class="hljs-string">'then'</span>, <span class="hljs-string">'catch'</span>)) &lt; <span class="hljs-number">2</span>)) {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;
+    }
+
+    <span class="hljs-keyword">var</span> reqOpts = _.defaults(_.pick(options, <span class="hljs-string">'url'</span>, <span class="hljs-string">'method'</span>, <span class="hljs-string">'headers'</span>, <span class="hljs-string">'data'</span>), {
+        <span class="hljs-attr">method</span>: <span class="hljs-string">'GET'</span>,
+        <span class="hljs-attr">headers</span>: {}
+    });</pre></div>
+                    
+                    
+                    
+                    <p>default promise calls</p>
+
+                    
+                    <div class='highlight'><pre>    (<span class="hljs-keyword">typeof</span> options.then !== <span class="hljs-string">'function'</span>) &amp;&amp; <span class="hljs-function">(<span class="hljs-params">options.then = (response, _req, _res</span>) =&gt;</span> {
+        _res.status(response.status).send(response.data);
+    });
+    <span class="hljs-function">(<span class="hljs-params"><span class="hljs-keyword">typeof</span> options.<span class="hljs-keyword">finally</span> !== <span class="hljs-string">'function'</span></span>) &amp;&amp; (<span class="hljs-params">options.<span class="hljs-keyword">finally</span> = (</span>) =&gt;</span> {});
+    <span class="hljs-function">(<span class="hljs-params"><span class="hljs-keyword">typeof</span> options.<span class="hljs-keyword">catch</span> !== <span class="hljs-string">'function'</span></span>) &amp;&amp; (<span class="hljs-params">options.<span class="hljs-keyword">catch</span> = (error, _req, _res</span>) =&gt;</span> {
+        <span class="hljs-keyword">try</span> {
+            <span class="hljs-keyword">var</span> data = error.response.data;
+            <span class="hljs-keyword">if</span> (<span class="hljs-keyword">typeof</span> data !== <span class="hljs-string">'object'</span>) {
+                <span class="hljs-keyword">try</span> {
+                    data = <span class="hljs-built_in">JSON</span>.parse(data);
+                } <span class="hljs-keyword">catch</span> (e) {
+                    data = {
+                        <span class="hljs-attr">message</span>: data
+                    };
+                }
+            }
+
+            _res.status(error.response.status).send(<span class="hljs-built_in">JSON</span>.stringify(data));
+        } <span class="hljs-keyword">catch</span> (e) {
+            _res.status(<span class="hljs-number">500</span>).send(<span class="hljs-built_in">JSON</span>.stringify({
+                <span class="hljs-attr">message</span>: <span class="hljs-string">'Internal Failure'</span>
+            }));
+        }
+    });</pre></div>
+                    
+                    
+                    
+                    <p>Axios call</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">return</span> axios(reqOpts)
+        .then(_.partial(<span class="hljs-function">(<span class="hljs-params">_req, _res, o, r</span>) =&gt;</span> options.then(r, _req, _res), req, res, options))
+        .catch(_.partial(<span class="hljs-function">(<span class="hljs-params">_req, _res, o, err</span>) =&gt;</span> options.catch(err, _req, _res), req, res, options))
+        .finally(_.partial(<span class="hljs-function">(<span class="hljs-params">_req, _res, o</span>) =&gt;</span> options.finally(_req, _res), req, res, options));
+}</pre></div>
+                    
+                    
+                    
+                    <p>Map from CRUD to HTTP for our default <code>Backbone.sync</code> implementation.</p>
+
+                    
+                    <div class='highlight'><pre><span class="hljs-keyword">var</span> methodMap = {
+    <span class="hljs-string">'create'</span>: <span class="hljs-string">'POST'</span>,
+    <span class="hljs-string">'update'</span>: <span class="hljs-string">'PUT'</span>,
+    <span class="hljs-string">'patch'</span>: <span class="hljs-string">'PATCH'</span>,
+    <span class="hljs-string">'delete'</span>: <span class="hljs-string">'DELETE'</span>,
+    <span class="hljs-string">'read'</span>: <span class="hljs-string">'GET'</span>
+};</pre></div>
+                    
+                    
+                    
+                    <p>Throw an error when a URL is needed, and none is supplied.</p>
+
+                    
+                    <div class='highlight'><pre>BackboneRequest.urlError = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params"></span>) </span>{
+    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(<span class="hljs-string">'A "url" property or function must be specified'</span>);
+};
+
+_.map([<span class="hljs-string">'Events'</span>], (x) =&gt; BackboneRequest[x] = _.clone(Backbone[x]));
+_.map([<span class="hljs-string">'Model'</span>, <span class="hljs-string">'Collection'</span>], (x) =&gt; BackboneRequest[x] = Backbone[x].extend({</pre></div>
+                    
+                    
+                    
+                    <p>constructor</p>
+
+                    
+                    <div class='highlight'><pre>    initialize(data = {}, options = {}) {
+        <span class="hljs-keyword">this</span>.setRouterParameters(options.req, options.res);
+    },</pre></div>
+                    
+                    
+                    
+                    <p>easier way to have express variables inside the object to use them in callbacks</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">set</span><span class="hljs-title">RouterParameters</span>(<span class="hljs-params">req = null, res = null</span>) {
+        <span class="hljs-keyword">this</span>._req = req;
+        <span class="hljs-keyword">this</span>._res = res;
+    },</pre></div>
+                    
+                    
+                    
+                    <p>Replacing prototype of sync to call custom sync method</p>
+
+                    
+                    <div class='highlight'><pre>    sync() {
+        <span class="hljs-keyword">return</span> BackboneRequest.sync.apply(<span class="hljs-keyword">this</span>, <span class="hljs-built_in">arguments</span>);
+    },</pre></div>
+                    
+                    
+                    
+                    <p>Shortcuts for clearer promise use</p>
+
+                    
+                    <div class='highlight'><pre>    fetchp(fn, o = {}) {
+        o.success = fn;
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.fetch(o);
+    },
+    savep(fn, o = {}) {
+        o.success = fn;
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.save(<span class="hljs-literal">null</span>, o);
+    },
+    destroyp(fn, o = {}) {
+        o.success = fn;
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.destroy(o);
+    },
+}));
+
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> BackboneRequest;</pre></div>
+                    
+                    
+                    <div class="fleur">h</div>
+            </div>
+        </div>
+    </body>
+</html>

@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html class="dark">
+    <head>
+        <title>backbone-api-99xp.js</title>
+        <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+        <link rel="stylesheet" media="all" href="/public/stylesheets/normalize.css" />
+        <link rel="stylesheet" media="all" href="../docco.css" />
+        <link rel="stylesheet" media="all" href="https://public.99xp.org/styles/color-modes.css" />
+        <link rel="stylesheet" media="all" href="https://public.99xp.org/styles/design.css" />
+    </head>
+    <body>
+        <div class="container">
+            <div class="page">
+
+                <div class="header">
+                    <small class="color-modes">
+                        <a href="#" class="color-mode dark" onclick="event.preventDefault(); document.getElementsByTagName('html')[0].classList.add('dark'); document.getElementsByTagName('html')[0].classList.remove('light')">&nbsp;</a>
+                        &nbsp;&nbsp;&nbsp;
+                        <a href="#" class="color-mode light" onclick="event.preventDefault(); document.getElementsByTagName('html')[0].classList.remove('dark'); document.getElementsByTagName('html')[0].classList.add('light')">&nbsp;</a>
+                    </small>
+                    
+                    <h1>backbone-api-99xp.js</h1>
+                    
+
+                    
+                </div>
+
+                
+                    
+                    <p>Micro Service integrator plus advanced validation, formatting and control over process.
+Mix of <a href="https://github.com/expressjs/express">express</a>, 
+<a href="https://github.com/brunnofoggia/validate-99xp">validate-99xp</a>, 
+<a href="https://github.com/brunnofoggia/backbone-request-99xp">backbone-request-99xp</a></p>
+
+                    
+                    
+                    
+                    <h2 id="code-documented-below">CODE DOCUMENTED BELOW</h2>
+
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    <hr>
+
+                    
+                    
+                    
+                    
+                    
+                    
+                    
+                    <h2 id="baseline-setup">Baseline setup</h2>
+
+                    
+                    
+                    
+                    
+                    
+                    <div class='highlight'><pre><span class="hljs-keyword">import</span> _ <span class="hljs-keyword">from</span> <span class="hljs-string">'underscore-99xp'</span>;
+<span class="hljs-keyword">import</span> v <span class="hljs-keyword">from</span> <span class="hljs-string">'validate-99xp'</span>;
+<span class="hljs-keyword">import</span> BackboneRequest <span class="hljs-keyword">from</span> <span class="hljs-string">'backbone-request-99xp'</span>;
+
+<span class="hljs-keyword">var</span> BackboneApi = {};</pre></div>
+                    
+                    
+                    
+                    <p>response object from express router</p>
+
+                    
+                    <div class='highlight'><pre>BackboneApi._res = <span class="hljs-literal">null</span>;</pre></div>
+                    
+                    
+                    
+                    <p>Extended Functionallity for Models and Collections</p>
+
+                    
+                    <div class='highlight'><pre><span class="hljs-keyword">var</span> extended = {</pre></div>
+                    
+                    
+                    
+                    <p>not meant to be used. will be used on setting api methods like POST or PUT</p>
+
+                    
+                    <div class='highlight'><pre>    idAttribute: <span class="hljs-string">'_id'</span>,
+    <span class="hljs-attr">auth</span>: <span class="hljs-literal">false</span>,
+    <span class="hljs-attr">tokenField</span>: <span class="hljs-string">'accessToken'</span>,</pre></div>
+                    
+                    
+                    
+                    <p>list of methods available in the api and their configuration (paths, validations)</p>
+
+                    
+                    <div class='highlight'><pre>    methods: {</pre></div>
+                    
+                    
+                    
+                    <pre><code>   auth: {
+       <span class="hljs-attr">public</span>: <span class="hljs-literal">true</span>,
+       <span class="hljs-attr">path</span>: <span class="hljs-string">'/a/b'</span>,
+       <span class="hljs-attr">validations</span>: {},
+       <span class="hljs-attr">data</span>: {
+           <span class="hljs-attr">user</span>: <span class="hljs-string">''</span>,
+           <span class="hljs-attr">pass</span>: <span class="hljs-string">''</span>,
+       },</code></pre><p>//            method: {}, if I dont set it, it will use a generic one</p>
+<pre><code>   },
+   <span class="hljs-attr">_sample</span>: Sample
+   <span class="hljs-attr">_sample</span>: {
+       <span class="hljs-attr">path</span>: <span class="hljs-string">'/a/b'</span>,
+       <span class="hljs-attr">validations</span>: {}
+   }</code></pre>
+                    
+                    <div class='highlight'><pre>    },</pre></div>
+                    
+                    
+                    
+                    <p> default method applying JWT Auth
+ might be necessary to overwrite it</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">set</span><span class="hljs-title">AuthHeader</span>(<span class="hljs-params">o</span>) {
+        <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.tokenField) {
+            <span class="hljs-keyword">return</span> BackboneApi.dataError(<span class="hljs-string">'tokenField is not set'</span>);
+        }
+        o.headers.Authorization = <span class="hljs-string">'Bearer '</span> + <span class="hljs-keyword">this</span>.data[<span class="hljs-keyword">this</span>.auth][<span class="hljs-keyword">this</span>.tokenField];
+
+        <span class="hljs-keyword">return</span> o;
+    },
+    isAuthenticated() {
+        <span class="hljs-keyword">return</span> !<span class="hljs-keyword">this</span>.auth || !!<span class="hljs-keyword">this</span>.data[<span class="hljs-keyword">this</span>.auth];
+    },</pre></div>
+                    
+                    
+                    
+                    <p>constructor</p>
+
+                    
+                    <div class='highlight'><pre>    initialize(p, o = {}) {
+        <span class="hljs-keyword">this</span>.setRouterParameters(o.req, o.res);</pre></div>
+                    
+                    
+                    
+                    <p>set options applying default options and ignoring router parameters</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">this</span>.options = _.defaults(_.omit(o, <span class="hljs-string">'req'</span>, <span class="hljs-string">'res'</span>), {
+            <span class="hljs-attr">autoexec</span>: <span class="hljs-literal">true</span>
+        });
+        <span class="hljs-keyword">this</span>.data = {};</pre></div>
+                    
+                    
+                    
+                    <p>keep method as an array to have a single way on processing</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">typeof</span> <span class="hljs-keyword">this</span>.options.method === <span class="hljs-string">'string'</span> &amp;&amp; (<span class="hljs-keyword">this</span>.options.method = [<span class="hljs-keyword">this</span>.options.method]);</pre></div>
+                    
+                    
+                    
+                    <p>autoexec if isn’t asked not to do it</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">this</span>.options.autoexec &amp;&amp; <span class="hljs-keyword">this</span>.execAll();
+    },</pre></div>
+                    
+                    
+                    
+                    <p>recursively run through methods set</p>
+
+                    
+                    <div class='highlight'><pre>    execAll() {</pre></div>
+                    
+                    
+                    
+                    <p>store a copy of methods to process them</p>
+
+                    
+                    <div class='highlight'><pre>        !<span class="hljs-keyword">this</span>._methodsExecution &amp;&amp; (<span class="hljs-keyword">this</span>._methodsExecution = _.clone(<span class="hljs-keyword">this</span>.options.method));</pre></div>
+                    
+                    
+                    
+                    <p>stop execution when all methods were processed</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">if</span> (_.size(<span class="hljs-keyword">this</span>._methodsExecution) === <span class="hljs-number">0</span>) {
+            <span class="hljs-keyword">this</span>._methodsExecution = <span class="hljs-literal">null</span>;
+            _.bind(<span class="hljs-keyword">this</span>.options.success, <span class="hljs-keyword">this</span>)();
+            <span class="hljs-keyword">return</span>;
+        }</pre></div>
+                    
+                    
+                    
+                    <p>grab first method out from list</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">var</span> method = <span class="hljs-keyword">this</span>._methodsExecution.shift();</pre></div>
+                    
+                    
+                    
+                    <p>execute it</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">this</span>.exec(method, () =&gt; <span class="hljs-keyword">this</span>.execAll(), <span class="hljs-keyword">this</span>.options.error);
+    },</pre></div>
+                    
+                    
+                    
+                    <p>execute one method</p>
+
+                    
+                    <div class='highlight'><pre>    exec(method, success, error) {
+        <span class="hljs-keyword">var</span> methodData = <span class="hljs-keyword">this</span>.methodData(method);</pre></div>
+                    
+                    
+                    
+                    <p>validate input</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">var</span> vErr = <span class="hljs-keyword">this</span>.validate(<span class="hljs-keyword">this</span>.getMethodInput(methodData), {
+            <span class="hljs-attr">methodData</span>: methodData
+        });</pre></div>
+                    
+                    
+                    
+                    <p>dispach validation errors</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">if</span> (vErr !== <span class="hljs-literal">null</span>) {
+            <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.validationErrors(vErr);
+        }</pre></div>
+                    
+                    
+                    
+                    <p>set execution as callback to pass through authentication if needed</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">var</span> fn = _.bind(<span class="hljs-keyword">this</span>.callApi, <span class="hljs-keyword">this</span>),
+            calledFn = _.partial(fn, method, methodData, success, error);</pre></div>
+                    
+                    
+                    
+                    <p>if authorization is not needed, or is authenticated already, execute method</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">if</span> (methodData.public || <span class="hljs-keyword">this</span>.isAuthenticated()) {
+            <span class="hljs-keyword">return</span> calledFn();
+        }</pre></div>
+                    
+                    
+                    
+                    <p>if method is not public and there’s no authentication set output an error</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (!<span class="hljs-keyword">this</span>.auth) {
+            <span class="hljs-keyword">return</span> BackboneApi.dataError(<span class="hljs-string">`method "<span class="hljs-subst">${method}</span>" is not set as public but auth is not set`</span>);
+        }</pre></div>
+                    
+                    
+                    
+                    <p>execute authentication and requested method after if</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.exec(<span class="hljs-keyword">this</span>.auth, calledFn);
+    },</pre></div>
+                    
+                    
+                    
+                    <p>call api and trigger callbacks accordingly to what happens</p>
+
+                    
+                    <div class='highlight'><pre>    callApi(method, methodData, success, error) {
+        <span class="hljs-keyword">this</span>.setApiCall(methodData);</pre></div>
+                    
+                    
+                    
+                    <p>request data</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">var</span> o = {
+            <span class="hljs-attr">method</span>: methodData.method, <span class="hljs-comment">// http method</span>
+            <span class="hljs-attr">data</span>: <span class="hljs-keyword">this</span>.getMethodInput(methodData), <span class="hljs-comment">// request body</span>
+            <span class="hljs-attr">headers</span>: _.result2(methodData, <span class="hljs-string">'headers'</span>, {}, [methodData], <span class="hljs-keyword">this</span>)
+        };</pre></div>
+                    
+                    
+                    
+                    <p>if method is private set headers</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">if</span> (!methodData.public) {
+            o = <span class="hljs-keyword">this</span>.setAuthHeader(o);
+        }</pre></div>
+                    
+                    
+                    
+                    <p>before function that can be set on method config to change options or data</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">var</span> before = _.bind(<span class="hljs-keyword">typeof</span> methodData.before === <span class="hljs-string">'function'</span> ? methodData.before : <span class="hljs-function">(<span class="hljs-params">c, _o, _methodData</span>) =&gt;</span> {
+                c(_o, _methodData);
+            }, <span class="hljs-keyword">this</span>),</pre></div>
+                    
+                    
+                    
+                    <p>request function executed after before callabck</p>
+
+                    
+                    <div class='highlight'><pre>            request = _.bind(_.partial(<span class="hljs-function">(<span class="hljs-params">_method, _methodData, _success, _error, _o</span>) =&gt;</span> {</pre></div>
+                    
+                    
+                    
+                    <p>listeners for success or error</p>
+
+                    
+                    <div class='highlight'><pre>                <span class="hljs-keyword">this</span>.listenToOnce(<span class="hljs-keyword">this</span>, <span class="hljs-string">'sync'</span>, _.bind(<span class="hljs-function"><span class="hljs-params">()</span> =&gt;</span> {
+                    <span class="hljs-keyword">this</span>.stopListening(<span class="hljs-keyword">this</span>);</pre></div>
+                    
+                    
+                    
+                    <p>store execution results with method name in data object</p>
+
+                    
+                    <div class='highlight'><pre>                    <span class="hljs-keyword">this</span>.data[_method] = <span class="hljs-keyword">this</span>.attributes;</pre></div>
+                    
+                    
+                    
+                    <p>empty attributes for next execution</p>
+
+                    
+                    <div class='highlight'><pre>                    <span class="hljs-keyword">this</span>.attributes = {};</pre></div>
+                    
+                    
+                    
+                    <p>handle possible errors inside callbacks</p>
+
+                    
+                    <div class='highlight'><pre>                    <span class="hljs-keyword">try</span> {
+                        <span class="hljs-keyword">typeof</span> _methodData.success === <span class="hljs-string">'function'</span> &amp;&amp; _.bind(_methodData.success, <span class="hljs-keyword">this</span>)(_o, <span class="hljs-keyword">this</span>._req.body, _methodData);
+                        <span class="hljs-keyword">typeof</span> _success === <span class="hljs-string">'function'</span> &amp;&amp; _.bind(_success, <span class="hljs-keyword">this</span>)(_o, <span class="hljs-keyword">this</span>._req.body, _methodData);
+                    } <span class="hljs-keyword">catch</span> (e) {
+                        <span class="hljs-comment">/*console.error('Internal Failure 1');*/</span>
+                        <span class="hljs-comment">/*console.error(e);*/</span>
+                        <span class="hljs-keyword">this</span>._res.status(<span class="hljs-number">500</span>).send({
+                            <span class="hljs-attr">message</span>: <span class="hljs-string">'Internal Failure (1)'</span>
+                        });
+                    }
+                }, <span class="hljs-keyword">this</span>));
+                <span class="hljs-keyword">this</span>.listenToOnce(<span class="hljs-keyword">this</span>, <span class="hljs-string">'error'</span>, _.bind(<span class="hljs-function">(<span class="hljs-params">model, data</span>) =&gt;</span> {
+                    <span class="hljs-keyword">this</span>.stopListening(<span class="hljs-keyword">this</span>);
+                    <span class="hljs-comment">/*!this._reqErr.response &amp;&amp; console.error('Internal Failure 2');*/</span></pre></div>
+                    
+                    
+                    
+                    <p>handle possible errors inside callbacks</p>
+
+                    
+                    <div class='highlight'><pre>                    <span class="hljs-keyword">try</span> {
+                        <span class="hljs-comment">/*console.error('Internal Failure 2a');*/</span>
+                        <span class="hljs-keyword">typeof</span> _methodData.error === <span class="hljs-string">'function'</span> &amp;&amp; _.bind(_methodData.error, <span class="hljs-keyword">this</span>)(data, _o, <span class="hljs-keyword">this</span>._req.body, _methodData);
+                        <span class="hljs-keyword">typeof</span> _error === <span class="hljs-string">'function'</span> ? _.bind(_error, <span class="hljs-keyword">this</span>)(data, _o, <span class="hljs-keyword">this</span>._req.body, _methodData) : !<span class="hljs-keyword">this</span>._res._headerSent &amp;&amp; <span class="hljs-keyword">this</span>._res.status(data.response.statusCode ? data.response.statusCode : <span class="hljs-number">500</span>).send(data.error);
+                    } <span class="hljs-keyword">catch</span> (e) {
+                        <span class="hljs-comment">/*console.error('Internal Failure 3');*/</span>
+                        <span class="hljs-comment">/*console.error(e);*/</span>
+                        <span class="hljs-keyword">this</span>._res.status(<span class="hljs-number">500</span>).send({
+                            <span class="hljs-attr">message</span>: <span class="hljs-string">'Internal Failure (2)'</span>
+                        });
+                    }
+                }, <span class="hljs-keyword">this</span>));</pre></div>
+                    
+                    
+                    
+                    <p>execute http request</p>
+
+                    
+                    <div class='highlight'><pre>                <span class="hljs-keyword">this</span>.save(<span class="hljs-literal">null</span>, _o);
+            }, method, methodData, success, error), <span class="hljs-keyword">this</span>);</pre></div>
+                    
+                    
+                    
+                    <p>handle possible errors inside before function</p>
+
+                    
+                    <div class='highlight'><pre>        <span class="hljs-keyword">try</span> {
+            before(request, o, methodData);
+        } <span class="hljs-keyword">catch</span> (e) {
+            <span class="hljs-comment">/*console.error('Internal Failure 4');*/</span>
+            <span class="hljs-comment">/*console.log(e);*/</span>
+            <span class="hljs-keyword">this</span>._res.status(<span class="hljs-number">500</span>).send({
+                <span class="hljs-attr">message</span>: <span class="hljs-string">'Internal Failure (4)'</span>
+            });
+        }
+    },</pre></div>
+                    
+                    
+                    
+                    <p>getter for methods data. ensure data for method asked is set</p>
+
+                    
+                    <div class='highlight'><pre>    methodData(method) {
+        <span class="hljs-keyword">if</span> (!method || !_.result(<span class="hljs-keyword">this</span>, <span class="hljs-string">'methods'</span>)[method]) {
+            <span class="hljs-keyword">return</span> BackboneApi.dataError(<span class="hljs-string">'Make sure you\'ve set your method and it\'s data'</span>);
+        }
+
+        <span class="hljs-keyword">var</span> methodData = _.result(<span class="hljs-keyword">this</span>, <span class="hljs-string">'methods'</span>)[method] || {};
+        <span class="hljs-keyword">if</span> (!methodData.path) {
+            BackboneApi.dataError(<span class="hljs-string">'Make sure you\'ve set a path for method '</span> + method + <span class="hljs-string">'\''</span>);
+        }
+
+        methodData = <span class="hljs-keyword">this</span>.setHttpMethod(methodData);
+
+        <span class="hljs-keyword">return</span> methodData;
+    },</pre></div>
+                    
+                    
+                    
+                    <p>get HTTP method from method configuration. if needed set a default HTTP method accordingly to method data input</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">set</span><span class="hljs-title">HttpMethod</span>(<span class="hljs-params">methodData</span>) {
+        <span class="hljs-keyword">var</span> data = <span class="hljs-keyword">this</span>.getMethodInput(methodData);
+        methodData = _.defaults(methodData, {
+            <span class="hljs-attr">method</span>: (<span class="hljs-keyword">typeof</span> data === <span class="hljs-string">'object'</span> &amp;&amp; _.size(data) &gt; <span class="hljs-number">0</span> ? <span class="hljs-string">'POST'</span> : <span class="hljs-string">'GET'</span>)
+        });
+        methodData.method = methodData.method.toUpperCase();
+
+        <span class="hljs-keyword">return</span> methodData;
+    },</pre></div>
+                    
+                    
+                    
+                    <p>get “data” from method configuration (can be an object or function) or req.body instead</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">get</span><span class="hljs-title">MethodInput</span>(<span class="hljs-params">methodData</span>) {
+        <span class="hljs-keyword">return</span> _.result2(methodData, <span class="hljs-string">'data'</span>, <span class="hljs-keyword">this</span>._req.body || {}, [_.clone(<span class="hljs-keyword">this</span>._req.body), methodData], <span class="hljs-keyword">this</span>);
+    },</pre></div>
+                    
+                    
+                    
+                    <p>replaces common behavior of backbone to ensure no id nonwanted will be added in Api URLs</p>
+
+                    
+                    <div class='highlight'><pre>    url() {
+        <span class="hljs-keyword">return</span> _.result(<span class="hljs-keyword">this</span>, <span class="hljs-string">'urlRoot'</span>) ||
+            _.result(<span class="hljs-keyword">this</span>.collection, <span class="hljs-string">'url'</span>) ||
+            BackboneApi.urlError();
+    },</pre></div>
+                    
+                    
+                    
+                    <p>set asked method data for the request to be executed</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">set</span><span class="hljs-title">ApiCall</span>(<span class="hljs-params">methodData</span>) {
+        <span class="hljs-keyword">this</span>.setApiUrl(methodData.path, methodData);
+    },</pre></div>
+                    
+                    
+                    
+                    <p>merge urlHost with the correct path for method asked. also render path as a template to make possible having attributes on it</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">set</span><span class="hljs-title">ApiUrl</span>(<span class="hljs-params">path, methodData</span>) {
+        <span class="hljs-keyword">var</span> host = _.result(<span class="hljs-keyword">this</span>, <span class="hljs-string">'urlHost'</span>) || BackboneApi.urlError(<span class="hljs-number">1</span>),
+            data = _.extend({}, _.clone(<span class="hljs-keyword">this</span>.data), {
+                <span class="hljs-attr">_model</span>: <span class="hljs-keyword">this</span>,
+                <span class="hljs-attr">_input</span>: <span class="hljs-keyword">this</span>.getMethodInput(methodData),
+                <span class="hljs-attr">_params</span>: <span class="hljs-keyword">this</span>._req.params
+            }),
+            pathfix = <span class="hljs-keyword">new</span> <span class="hljs-built_in">RegExp</span>(<span class="hljs-string">'((?&lt;!\:)\/{1,})'</span>, <span class="hljs-string">'g'</span>);
+
+        path = _.template(path)(data);
+
+        <span class="hljs-keyword">return</span> <span class="hljs-keyword">this</span>.urlRoot = [host, path].join(<span class="hljs-string">'/'</span>).replace(pathfix, <span class="hljs-string">'/'</span>);
+    },</pre></div>
+                    
+                    
+                    
+                    <p>Customization of sync to use BackboneRequest.sync</p>
+
+                    
+                    <div class='highlight'><pre>    sync(method, model, options) {
+        method = methodMap[options.method];
+        <span class="hljs-keyword">var</span> args = [method, model, options];
+        <span class="hljs-keyword">return</span> BackboneRequest.sync.apply(<span class="hljs-keyword">this</span>, args);
+    },</pre></div>
+                    
+                    
+                    
+                    <p>inherit validations from method configuration</p>
+
+                    
+                    <div class='highlight'><pre>    validations(a, o) {
+        <span class="hljs-keyword">var</span> vl = _.result2(o.methodData, <span class="hljs-string">'validations'</span>, {}, [a, o], <span class="hljs-keyword">this</span>);
+        <span class="hljs-keyword">return</span> vl;
+    },</pre></div>
+                    
+                    
+                    
+                    <p>Skip own validations. The ones that matter are method validations</p>
+
+                    
+                    <div class='highlight'><pre>    _validate() {
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;
+    },</pre></div>
+                    
+                    
+                    
+                    <p>Dispatcher of validation errors</p>
+
+                    
+                    <div class='highlight'><pre>    validationErrors(err) {
+        <span class="hljs-keyword">this</span>._res.status(<span class="hljs-number">400</span>).send({
+            <span class="hljs-attr">title</span>: <span class="hljs-string">'Invalid Data'</span>,
+            <span class="hljs-attr">errors</span>: err
+        });
+    },</pre></div>
+                    
+                    
+                    
+                    <p>Store req and res objects from express router. Those are necessary to access input data and to send information to the client</p>
+
+                    
+                    <div class='highlight'><pre>    <span class="hljs-keyword">set</span><span class="hljs-title">RouterParameters</span>(<span class="hljs-params">req, res</span>) {
+        <span class="hljs-keyword">if</span> (!req || !res) {
+            BackboneApi.dataError(<span class="hljs-string">'Initialize requires an object with req and res (express route variables) within'</span>);
+        }
+
+        <span class="hljs-keyword">this</span>._req = req;
+        BackboneApi._res = <span class="hljs-keyword">this</span>._res = res;
+    },
+};</pre></div>
+                    
+                    
+                    
+                    <p>add extension and validate to our classes</p>
+
+                    
+                    <div class='highlight'><pre>_.map([<span class="hljs-string">'Model'</span>, <span class="hljs-string">'Collection'</span>], (x) =&gt; {
+    BackboneApi[x] = BackboneRequest[x].extend(_.extend(_.clone(v), extended));
+});</pre></div>
+                    
+                    
+                    
+                    <p>Throw an error when a URL is needed, and none is supplied.</p>
+
+                    
+                    <div class='highlight'><pre>BackboneApi.urlError = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">code</span>) </span>{
+    <span class="hljs-keyword">if</span> (code === <span class="hljs-number">2</span>) {
+        BackboneApi.dataError(<span class="hljs-string">'A "path" property must be specified in methods list for the current method'</span>);
+    }
+    BackboneApi.dataError(<span class="hljs-string">'A "urlHost" property or function must be specified'</span>);
+};</pre></div>
+                    
+                    
+                    
+                    <p>Throw an error when some DATA is needed, and none is supplied.</p>
+
+                    
+                    <div class='highlight'><pre>BackboneApi.dataError = <span class="hljs-function"><span class="hljs-keyword">function</span>(<span class="hljs-params">msg</span>) </span>{
+    <span class="hljs-built_in">console</span>.error(msg);
+    <span class="hljs-keyword">if</span> (BackboneApi._res) {
+        <span class="hljs-keyword">return</span> BackboneApi._res.status(<span class="hljs-number">500</span>).send(msg);
+    }
+    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-built_in">Error</span>(msg);
+};</pre></div>
+                    
+                    
+                    
+                    <p>Map from CRUD to HTTP for our default <code>Backbone.sync</code> implementation.</p>
+
+                    
+                    <div class='highlight'><pre><span class="hljs-keyword">var</span> methodMap = {
+    <span class="hljs-string">'POST'</span>: <span class="hljs-string">'create'</span>,
+    <span class="hljs-string">'PUT'</span>: <span class="hljs-string">'update'</span>,
+    <span class="hljs-string">'PATCH'</span>: <span class="hljs-string">'patch'</span>,
+    <span class="hljs-string">'DELETE'</span>: <span class="hljs-string">'delete'</span>,
+    <span class="hljs-string">'GET'</span>: <span class="hljs-string">'read'</span>
+};
+
+
+<span class="hljs-keyword">export</span> <span class="hljs-keyword">default</span> BackboneApi;</pre></div>
+                    
+                    
+                    <div class="fleur">h</div>
+            </div>
+        </div>
+    </body>
+</html>
