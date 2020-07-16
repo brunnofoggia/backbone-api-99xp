@@ -92,7 +92,7 @@ var extended = {
         var methodData = this.methodData(method);
 
         // validate input
-        var vErr = this.validate(this.getMethodInput(methodData), {
+        var vErr = this.validate(methodData.sendData, {
             methodData: methodData
         });
         // dispach validation errors
@@ -120,7 +120,7 @@ var extended = {
         // request data
         var o = {
             method: methodData.method, // http method
-            data: this.getMethodInput(methodData), // request body
+            data: methodData.sendData, // request body
             headers: _.result2(methodData, 'headers', {}, [methodData], this)
         };
 
@@ -199,13 +199,14 @@ var extended = {
             BackboneApi.dataError('Make sure you\'ve set a path for method ' + method + '\'');
         }
 
+        methodData.sendData = this.getMethodInput(methodData);
         methodData = this.setHttpMethod(methodData);
 
         return methodData;
     },
     // get HTTP method from method configuration. if needed set a default HTTP method accordingly to method data input
     setHttpMethod(methodData) {
-        var data = this.getMethodInput(methodData);
+        var data = methodData.sendData;
         methodData = _.defaults(methodData, {
             method: (typeof data === 'object' && _.size(data) > 0 ? 'POST' : 'GET')
         });
@@ -232,7 +233,7 @@ var extended = {
         var host = _.result(this, 'urlHost') || BackboneApi.urlError(1),
             data = _.extend({}, _.clone(this.data), {
                 _model: this,
-                _input: this.getMethodInput(methodData),
+                _input: methodData.sendData,
                 _params: this._req.params
             }),
             pathfix = new RegExp('((?<!\:)\/{1,})', 'g');
