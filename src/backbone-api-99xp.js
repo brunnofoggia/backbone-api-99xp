@@ -89,10 +89,23 @@ var extended = {
     },
     // execute one method
     exec(method, success, error) {
-        var methodData = this.methodData(method);
+        var vErr,
+            methodData = this.methodData(method);
 
-        // validate input
-        var vErr = this.validate(methodData.sendData, {
+        // pre validate input
+        vErr = this.validate(this._req.body || {}, {
+            methodData: methodData,
+            validationsKey: 'inputValidations'
+        });
+        // dispach validation errors
+        if (vErr !== null) {
+            return this.validationErrors(vErr);
+        }
+
+        methodData = this.methodDataCompose(methodData);
+        
+        // validate data
+        vErr = this.validate(methodData.sendData, {
             methodData: methodData
         });
         // dispach validation errors
@@ -198,10 +211,11 @@ var extended = {
         if (!methodData.path) {
             BackboneApi.dataError('Make sure you\'ve set a path for method ' + method + '\'');
         }
-
+        return methodData;
+    },
+    methodDataCompose(methodData) {
         methodData.sendData = this.getMethodInput(methodData);
         methodData = this.setHttpMethod(methodData);
-
         return methodData;
     },
     // get HTTP method from method configuration. if needed set a default HTTP method accordingly to method data input
@@ -250,7 +264,7 @@ var extended = {
     },
     // inherit validations from method configuration
     validations(a, o) {
-        var vl = _.result2(o.methodData, 'validations', {}, [a, o], this);
+        var vl = _.result2(o.methodData, o.validationsKey || 'validations', {}, [a, o], this);
         return vl;
     },
     // Skip own validations. The ones that matter are method validations
