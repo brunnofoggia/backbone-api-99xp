@@ -66,6 +66,7 @@ var extended = {
             autoexec: true
         });
         this.data = {};
+        this.dataSent = {};
 
         // keep method as an array to have a single way on processing
         typeof this.options.method === 'string' && (this.options.method = [this.options.method]);
@@ -131,6 +132,7 @@ var extended = {
     callApi(method, methodData, success, error) {
         this.setApiCall(methodData);
         // request data
+        this.dataSent[method] = methodData.sendData;
         var o = {
             method: methodData.method, // http method
             data: methodData.sendData, // request body
@@ -141,7 +143,7 @@ var extended = {
         if (!methodData.public) {
             o = this.setAuthHeader(o);
         }
-
+        
         // before function that can be set on method config to change options or data
         var before = _.bind(typeof methodData.before === 'function' ? methodData.before : (c, _o, _methodData) => {
                 c(_o, _methodData);
