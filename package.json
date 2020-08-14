@@ -1,6 +1,6 @@
 {
   "name": "backbone-api-99xp",
-  "version": "0.4.0-beta",
+  "version": "0.4.1-beta",
   "keywords": [
     "util",
     "functional",
@@ -34,10 +34,12 @@
   },
   "devDependencies": {
     "@babel/core": "^7.4.3",
+    "@babel/plugin-proposal-optional-chaining": "^7.11.0",
     "@babel/preset-env": "^7.4.3",
+    "babel-eslint": "^10.1.0",
     "babel-jest": "^26.0.1",
     "docco": "*",
-    "eslint": "1.10.x",
+    "eslint": "^7.6.0",
     "gzip-size-cli": "^1.0.0",
     "jest": "^26.0.1",
     "pretty-bytes-cli": "^1.0.0",

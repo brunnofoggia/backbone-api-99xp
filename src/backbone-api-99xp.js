@@ -163,11 +163,7 @@ var extended = {
                         typeof _methodData.success === 'function' && _.bind(_methodData.success, this)(_o, this._req.body, _methodData);
                         typeof _success === 'function' && _.bind(_success, this)(_o, this._req.body, _methodData);
                     } catch (e) {
-                        /*console.error('Internal Failure 1');*/
-                        /*console.error(e);*/
-                        this._res.status(500).send({
-                            message: 'Internal Failure (1)'
-                        });
+                        typeof _error === 'function' ? _error({ message: 'Internal Failure (1)' }) : (!this._res._headerSent && this._res.status(500).send({ message: 'Internal Failure (1)' }));
                     }
                 }, this));
                 this.listenToOnce(this, 'error', _.bind((model, data) => {
@@ -178,7 +174,7 @@ var extended = {
                     try {
                         /*console.error('Internal Failure 2a');*/
                         typeof _methodData.error === 'function' && _.bind(_methodData.error, this)(data, _o, this._req.body, _methodData);
-                        typeof _error === 'function' ? _.bind(_error, this)(data, _o, this._req.body, _methodData) : !this._res._headerSent && this._res.status(data.response.statusCode ? data.response.statusCode : 500).send(data.error);
+                        typeof _error === 'function' ? _.bind(_error, this)(data, _o, this._req.body, _methodData) : (!this._res._headerSent && this._res.status(data.response?.statusCode || 500).send(data.error));
                     } catch (e) {
                         /*console.error('Internal Failure 3');*/
                         /*console.error(e);*/
