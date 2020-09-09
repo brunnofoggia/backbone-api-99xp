@@ -163,7 +163,8 @@ var extended = {
                         typeof _methodData.success === 'function' && _.bind(_methodData.success, this)(_o, this._req.body, _methodData);
                         typeof _success === 'function' && _.bind(_success, this)(_o, this._req.body, _methodData);
                     } catch (e) {
-                        typeof _error === 'function' ? _error({ message: 'Internal Failure (1)' }) : (!this._res._headerSent && this._res.status(500).send({ message: 'Internal Failure (1)' }));
+                        var data = { error: 'Internal Failure (1)' };
+                        typeof _error === 'function' ? _error(data) : (!this._res._headerSent && this._res.status(500).send(data));
                     }
                 }, this));
                 this.listenToOnce(this, 'error', _.bind((model, data) => {
@@ -179,7 +180,7 @@ var extended = {
                         /*console.error('Internal Failure 3');*/
                         /*console.error(e);*/
                         this._res.status(500).send({
-                            message: 'Internal Failure (2)'
+                            error: 'Internal Failure (2)'
                         });
                     }
                 }, this));
@@ -190,13 +191,12 @@ var extended = {
 
         // handle possible errors inside before function
         try {
-            before(request, o, methodData);
+            before(request, o, methodData, error);
         } catch (e) {
-            /*console.error('Internal Failure 4');*/
-            /*console.log(e);*/
-            this._res.status(500).send({
-                message: 'Internal Failure (4)'
-            });
+            var data = {
+                error: 'Internal Failure (4)'
+            };
+            typeof error === 'function' ? _.bind(error, this)(data, o, this._req.body, methodData) : (!this._res._headerSent && this._res.status(data?.response?.statusCode || 500).send(data?.error));
         }
     },
     // getter for methods data. ensure data for method asked is set
@@ -209,6 +209,7 @@ var extended = {
         if (!methodData.path) {
             BackboneApi.dataError('Make sure you\'ve set a path for method ' + method + '\'');
         }
+        methodData.name = method;
         return methodData;
     },
     methodDataCompose(methodData) {
