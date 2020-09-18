@@ -126,7 +126,7 @@ var extended = {
             return BackboneApi.dataError(`method "${method}" is not set as public but auth is not set`);
         }
         // execute authentication and requested method after if
-        return this.exec(this.auth, calledFn);
+        return this.exec(this.auth, calledFn, error);
     },
     // call api and trigger callbacks accordingly to what happens
     callApi(method, methodData, success, error) {
