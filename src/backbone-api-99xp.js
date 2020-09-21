@@ -14,6 +14,7 @@
 import _ from 'underscore-99xp';
 import v from 'validate-99xp';
 import BackboneRequest from 'backbone-request-99xp';
+import AppException from 'app-exception';
 
 var BackboneApi = {};
 
@@ -49,7 +50,7 @@ var extended = {
     //  might be necessary to overwrite it
     setAuthHeader(o) {
         if (!this.tokenField) {
-            return BackboneApi.dataError('tokenField is not set');
+            return BackboneApi.error('tokenField is not set');
         }
         o.headers.Authorization = 'Bearer ' + this.data[this.auth][this.tokenField];
 
@@ -123,7 +124,7 @@ var extended = {
         }
         // if method is not public and there's no authentication set output an error
         else if (!this.auth) {
-            return BackboneApi.dataError(`method "${method}" is not set as public but auth is not set`);
+            return BackboneApi.error(`method "${method}" is not set as public but auth is not set`);
         }
         // execute authentication and requested method after if
         return this.exec(this.auth, calledFn, error);
@@ -164,7 +165,7 @@ var extended = {
                         typeof _success === 'function' && _.bind(_success, this)(_o, this._req.body, _methodData);
                     } catch (e) {
                         var data = { error: 'Internal Failure (1)' };
-                        typeof _error === 'function' ? _error(data) : (!this._res._headerSent && this._res.status(500).send(data));
+                        typeof _error === 'function' ? _error(data) : (BackboneApi.error(data));
                     }
                 }, this));
                 this.listenToOnce(this, 'error', _.bind((model, data) => {
@@ -175,13 +176,14 @@ var extended = {
                     try {
                         /*console.error('Internal Failure 2a');*/
                         typeof _methodData.error === 'function' && _.bind(_methodData.error, this)(data, _o, this._req.body, _methodData);
-                        typeof _error === 'function' ? _.bind(_error, this)(data, _o, this._req.body, _methodData) : (!this._res._headerSent && this._res.status(data.response?.statusCode || 500).send(data.error));
+                        typeof _error === 'function' ? _.bind(_error, this)(data, _o, this._req.body, _methodData) : (BackboneApi.error(data?.error, 0, data?.response?.statusCode || 500));
                     } catch (e) {
                         /*console.error('Internal Failure 3');*/
                         /*console.error(e);*/
-                        this._res.status(500).send({
-                            error: 'Internal Failure (2)'
-                        });
+                        BackboneApi.error({
+                            title: 'Internal Server Error',
+                            errors: e
+                        }, 3);
                     }
                 }, this));
 
@@ -196,18 +198,18 @@ var extended = {
             var data = {
                 error: 'Internal Failure (4)'
             };
-            typeof error === 'function' ? _.bind(error, this)(data, o, this._req.body, methodData) : (!this._res._headerSent && this._res.status(data?.response?.statusCode || 500).send(data?.error));
+            typeof error === 'function' ? _.bind(error, this)(data, o, this._req.body, methodData) : (BackboneApi.error(data?.error, 0, data?.response?.statusCode || 500));
         }
     },
     // getter for methods data. ensure data for method asked is set
     methodData(method) {
         if (!method || !_.result(this, 'methods')[method]) {
-            return BackboneApi.dataError('Make sure you\'ve set your method and it\'s data');
+            return BackboneApi.error('Make sure you\'ve set your method and it\'s data');
         }
 
         var methodData = _.result(this, 'methods')[method] || {};
         if (!methodData.path) {
-            BackboneApi.dataError('Make sure you\'ve set a path for method ' + method + '\'');
+            BackboneApi.error('Make sure you\'ve set a path for method ' + method + '\'');
         }
         methodData.name = method;
         return methodData;
@@ -272,15 +274,15 @@ var extended = {
     },
     // Dispatcher of validation errors
     validationErrors(err) {
-        this._res.status(400).send({
+        return BackboneApi.error({
             title: 'Invalid Data',
             errors: err
-        });
+        }, 0, 400);
     },
     // Store req and res objects from express router. Those are necessary to access input data and to send information to the client
     setRouterParameters(req, res) {
         if (!req || !res) {
-            BackboneApi.dataError('Initialize requires an object with req and res (express route variables) within');
+            BackboneApi.error('Initialize requires an object with req and res (express route variables) within');
         }
 
         this._req = req;
@@ -296,18 +298,17 @@ _.map(['Model', 'Collection'], (x) => {
 // Throw an error when a URL is needed, and none is supplied.
 BackboneApi.urlError = function(code) {
     if (code === 2) {
-        BackboneApi.dataError('A "path" property must be specified in methods list for the current method');
+        BackboneApi.error('A "path" property must be specified in methods list for the current method');
     }
-    BackboneApi.dataError('A "urlHost" property or function must be specified');
+    BackboneApi.error('A "urlHost" property or function must be specified');
 };
 
 // Throw an error when some DATA is needed, and none is supplied.
-BackboneApi.dataError = function(msg) {
-    console.error(msg);
-    if (BackboneApi._res) {
-        return BackboneApi._res.status(500).send(msg);
-    }
-    throw new Error(msg);
+BackboneApi.error = function(msg, code = 0, status = 500) {
+    throw new AppException({
+        title: 'Internal Server Error',
+        errors: e
+    }, code, status);
 };
 
 // Map from CRUD to HTTP for our default `Backbone.sync` implementation.

@@ -10,7 +10,10 @@ const globals = {
   'underscore-99xp': '_',
   'validate-99xp': 'v',
   'backbone-request-99xp': 'BackboneRequest',
+  'app-exception': 'AppException',
 };
+
+const externals = ['backbone', 'v8n-99xp','validate-99xp','underscore-99xp', 'backbone-request-99xp', 'app-exception'];
 
 const now = new Date();
 const year = now.getFullYear();
@@ -32,7 +35,7 @@ const footer = '';
 export default [
   {
     input: 'src/backbone-api-99xp.js',
-    external: ['backbone', 'v8n-99xp','validate-99xp','underscore-99xp', 'backbone-request-99xp'],
+    external: externals,
     output: [
       {
         file: 'lib/backbone-api-99xp.js',
@@ -57,7 +60,7 @@ export default [
   },
   {
     input: 'src/backbone-api-99xp.js',
-    external: ['backbone', 'v8n-99xp','validate-99xp','underscore-99xp', 'backbone-request-99xp'],
+    external: externals,
     output: [
       {
         file: 'lib/backbone-api-99xp.min.js',
