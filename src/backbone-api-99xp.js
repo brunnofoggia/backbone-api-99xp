@@ -152,8 +152,7 @@ var extended = {
             // request function executed after before callabck
             request = _.bind(_.partial((_method, _methodData, _success, _error, _o) => {
                 // listeners for success or error
-                this.listenToOnce(this, 'sync', _.bind(() => {
-                    this.stopListening(this);
+                this.once(['sync', _.bind(() => {
                     // store execution results with method name in data object
                     this.data[_method] = this.attributes;
                     // empty attributes for next execution
@@ -167,11 +166,7 @@ var extended = {
                         var data = { error: 'Internal Failure (1)' };
                         typeof _error === 'function' ? _error(data) : (BackboneApi.error(data));
                     }
-                }, this));
-                this.listenToOnce(this, 'error', _.bind((model, data) => {
-                    this.stopListening(this);
-                    /*!this._reqErr.response && console.error('Internal Failure 2');*/
-
+                }, this)], ['error', _.bind((model, data) => {
                     // handle possible errors inside callbacks
                     try {
                         /*console.error('Internal Failure 2a');*/
@@ -185,7 +180,8 @@ var extended = {
                             errors: e
                         }, 3);
                     }
-                }, this));
+                }, this)
+                ]);
 
                 // execute http request
                 this.save(null, _o);
@@ -196,7 +192,8 @@ var extended = {
             before(request, o, methodData, error);
         } catch (e) {
             var data = {
-                error: 'Internal Failure (4)'
+                title: 'Internal Failure (4)',
+                errors: e
             };
             typeof error === 'function' ? _.bind(error, this)(data, o, this._req.body, methodData) : (BackboneApi.error(data?.error, 0, data?.response?.statusCode || 500));
         }
@@ -274,7 +271,7 @@ var extended = {
     },
     // Dispatcher of validation errors
     validationErrors(err) {
-        return BackboneApi.error({
+        throw new AppException({
             title: 'Invalid Data',
             errors: err
         }, 0, 400);
@@ -304,10 +301,10 @@ BackboneApi.urlError = function(code) {
 };
 
 // Throw an error when some DATA is needed, and none is supplied.
-BackboneApi.error = function(msg, code = 0, status = 500) {
+BackboneApi.error = function(err, code = 0, status = 500) {
     throw new AppException({
         title: 'Internal Server Error',
-        errors: e
+        errors: err
     }, code, status);
 };
 
