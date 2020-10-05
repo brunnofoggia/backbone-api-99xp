@@ -1,6 +1,6 @@
 {
   "name": "backbone-api-99xp",
-  "version": "0.8.0-beta",
+  "version": "0.9.0-alpha",
   "keywords": [
     "util",
     "functional",
@@ -58,6 +58,6 @@
   "dependencies": {
     "app-exception": "^1.0.0-2",
     "backbone-request-99xp": "github:brunnofoggia/backbone-request-99xp",
-    "validate-99xp": "^1.2.0"
+    "validate-99xp": "^1.3.2"
   }
 }
