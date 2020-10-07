@@ -14,7 +14,7 @@
 import _ from 'underscore-99xp';
 import v from 'validate-99xp';
 import BackboneRequest from 'backbone-request-99xp';
-import AppException from 'app-exception';
+import ExceptionResponse from 'app-exception/src/Response';
 
 var BackboneApi = {};
 
@@ -271,7 +271,7 @@ var extended = {
     },
     // Dispatcher of validation errors
     validationErrors(err) {
-        throw new AppException({
+        throw new ExceptionResponse({
             title: 'Invalid Data',
             errors: err
         }, 0, 400);
@@ -302,7 +302,7 @@ BackboneApi.urlError = function(code) {
 
 // Throw an error when some DATA is needed, and none is supplied.
 BackboneApi.error = function(err, code = 0, status = 500) {
-    throw new AppException({
+    throw new ExceptionResponse({
         title: 'Internal Server Error',
         errors: err
     }, code, status);
