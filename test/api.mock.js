@@ -23,8 +23,19 @@ export default BackboneApi.Model.extend({
                 return h;
             }
         },
-        info: {
-            path: 'info',
+        sampleget: {
+            path: 'sample_get/{{_params.id}}',
+        },
+        samplepost: {
+            path: 'sample_post',
+            data: {"id": "some_info"},
+            before(c, o, methodData) {
+                o.data.info_added_into_before = 'another_info';
+                c(o);
+            }
+        },
+        samplepost_with_input: {
+            path: 'sample_post',
             inputValidations: {
                 "myage": [[v8n().string().minLength(2), 'Informe sua idade']]
             },
