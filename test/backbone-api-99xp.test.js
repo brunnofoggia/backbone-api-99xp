@@ -37,14 +37,16 @@ it('post some data > check output', async () => {
     }).then(f=>f).catch(f=>f);
 });
 
-it('post some data > use before to add data > check output', async () => {
+it('post some data > use before to add data > check output & global headers', async () => {
     expect.assertions(1);
 
     await new Promise(async (s, e)=>{
         new Api({}, {req: {body: null}, res: {}, method: 'samplepost', success: function () {
-            var d = this.data.samplepost;
+            var d = this.data.samplepost,
+                hSent = this.headersSent,
+                hGlobal = this.globalHeaders();
             
-            expect(d.info === 'some_info' && d.wholebody.info_added_into_before === 'another_info').toBe(true);
+            expect(d.info === 'some_info' && d.wholebody.info_added_into_before === 'another_info' && hSent.global === hGlobal.global).toBe(true);
             s();
         }, error: () => {
             expect(false).toBe(true);

@@ -8,6 +8,11 @@ export default BackboneApi.Model.extend({
     urlHost() {
         return 'https://tapi.99xp.org/test/';
     },
+    globalHeaders() {
+        var h = {};
+        h.global = '1';
+        return h;
+    },
     methods: {
         auth: {
             public: true,
@@ -30,6 +35,7 @@ export default BackboneApi.Model.extend({
             path: 'sample_post',
             data: {"id": "some_info"},
             before(c, o, methodData) {
+                this.headersSent = o.headers;
                 o.data.info_added_into_before = 'another_info';
                 c(o);
             }

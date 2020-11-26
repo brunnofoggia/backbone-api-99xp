@@ -51,10 +51,16 @@ var extended = {
     setAuthHeader(o) {
         if (!this.tokenField) {
             return BackboneApi.error('tokenField is not set');
+        } else if(!this.auth || !this.methods[this.auth]) {
+            return BackboneApi.error('auth method is not set');
         }
+
         o.headers.Authorization = 'Bearer ' + this.data[this.auth][this.tokenField];
 
         return o;
+    },
+    isPublic(force=false) {
+        return !this.auth || force;
     },
     isAuthenticated() {
         return !this.auth || !!this.data[this.auth];
@@ -134,14 +140,15 @@ var extended = {
         this.setApiCall(methodData);
         // request data
         this.dataSent[method] = methodData.sendData;
-        var o = {
+        var globalHeaders = _.result2(this, 'globalHeaders', {}, [methodData], this),
+            o = {
             method: methodData.method, // http method
             data: methodData.sendData, // request body
-            headers: _.result2(methodData, 'headers', {}, [methodData], this)
+            headers: _.result2(methodData, 'headers', globalHeaders, [methodData], this)
         };
 
         // if method is private set headers
-        if (!methodData.public) {
+        if (!this.isPublic(methodData.public)) {
             o = this.setAuthHeader(o);
         }
         
