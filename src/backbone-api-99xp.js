@@ -141,11 +141,12 @@ var extended = {
         // request data
         this.dataSent[method] = methodData.sendData;
         var globalHeaders = _.result2(this, 'globalHeaders', {}, [methodData], this),
-            o = {
-            method: methodData.method, // http method
-            data: methodData.sendData, // request body
-            headers: _.result2(methodData, 'headers', globalHeaders, [methodData], this)
-        };
+            globalOptions = _.result2(this, 'globalDefaultOptions', {}, [methodData], this),
+            o = _.defaults2({
+                method: methodData.method, // http method
+                data: methodData.sendData, // request body
+                headers: _.result2(methodData, 'headers', globalHeaders, [methodData], this)
+            }, globalOptions);
 
         // if method is private set headers
         if (!this.isPublic(methodData.public)) {
