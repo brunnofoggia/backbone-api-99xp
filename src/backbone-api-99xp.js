@@ -67,7 +67,7 @@ var extended = {
     },
     // constructor
     initialize(p, o = {}) {
-        this.setRouterParameters(o.req, o.res);
+        this.setParameters(o);
         // set options applying default options and ignoring router parameters
         this.data = {};
         this.dataSent = {};
@@ -82,19 +82,23 @@ var extended = {
         this.options.autoexec && this.execAll();
     },
     // recursively run through methods set
-    execAll() {
+    execAll(methods, success, error) {
+        !methods && (methods = this.options.method);
+        !success && (success = this.options.success);
+        !error && (error = this.options.error);
+
         // store a copy of methods to process them
-        !this._methodsExecution && (this._methodsExecution = _.clone(this.options.method));
+        !this._methodsExecution && (this._methodsExecution = _.clone(methods));
         // stop execution when all methods were processed
         if (_.size(this._methodsExecution) === 0) {
             this._methodsExecution = null;
-            _.bind(this.options.success, this)();
+            _.bind(success, this)();
             return;
         }
         // grab first method out from list
         var method = this._methodsExecution.shift();
         // execute it
-        this.exec(method, () => this.execAll(), this.options.error);
+        this.exec(method, () => this.execAll(methods, success, error), error);
     },
     // execute one method
     exec(method, success, error) {
@@ -286,12 +290,9 @@ var extended = {
         }, 0, 400);
     },
     // Store req and res objects from express router. Those are necessary to access input data and to send information to the client
-    setRouterParameters(req, res) {
-        if (!req || !res) {
-            BackboneApi.error('Initialize requires an object with req and res (express route variables) within');
-        }
-
-        this._req = req;
+    setParameters(o) {
+        var {req, res, params, body} = o;
+        this._req = req || {params: params || {}, body: body || {}};
         BackboneApi._res = this._res = res;
     },
 };
@@ -311,6 +312,7 @@ BackboneApi.urlError = function(code) {
 
 // Throw an error when some DATA is needed, and none is supplied.
 BackboneApi.error = function(err, code = 0, status = 500) {
+    console.error(err);
     throw new ExceptionResponse({
         title: 'Internal Server Error',
         errors: err
