@@ -51,7 +51,7 @@ var extended = {
     setAuthHeader(o) {
         if (!this.tokenField) {
             return BackboneApi.error('tokenField is not set');
-        } else if(!this.auth || !this.methods[this.auth]) {
+        } else if (!this.auth || !this.methods[this.auth]) {
             return BackboneApi.error('auth method is not set');
         }
 
@@ -59,7 +59,7 @@ var extended = {
 
         return o;
     },
-    isPublic(force=false) {
+    isPublic(force = false) {
         return !this.auth || force;
     },
     isAuthenticated() {
@@ -69,11 +69,12 @@ var extended = {
     initialize(p, o = {}) {
         this.setRouterParameters(o.req, o.res);
         // set options applying default options and ignoring router parameters
-        this.options = _.defaults(_.omit(o, 'req', 'res'), {
-            autoexec: true
-        });
         this.data = {};
         this.dataSent = {};
+        
+        this.options = _.defaults(_.omit(o, 'req', 'res'), {
+            autoexec: !!o.method
+        });
 
         // keep method as an array to have a single way on processing
         typeof this.options.method === 'string' && (this.options.method = [this.options.method]);

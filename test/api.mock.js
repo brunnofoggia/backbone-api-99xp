@@ -54,11 +54,6 @@ export default BackboneApi.Model.extend({
                 data.id = input.myage;
                 return data;
             }
-        },
-        vault: {
-            path: 'v1/vaults/cards',
-            validations: {
-            },
-        },
+        }
     }
 });
