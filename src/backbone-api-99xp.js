@@ -273,6 +273,14 @@ var extended = {
         var args = [method, model, options];
         return BackboneRequest.sync.apply(this, args);
     },
+    // Avoid response arrays from being converted to assoc objects 
+    set(models, options) {
+      var isArray = _.isArray(models),
+          args = [models, options],
+          r = BackboneRequest.Model.prototype.set.apply(this, args);
+      isArray && (this.attributes = _.toArray(this.attributes));
+      return r;
+    },
     // inherit validations from method configuration
     validations(a, o) {
         var vl = _.result2(o.methodData, o.validationsKey || 'validations', {}, [a, o], this);
