@@ -185,16 +185,15 @@ var extended = {
         // before function that can be set on method config to change options or data
         var beforeError = _.bind(
                 _.partial(
-                    function (data, o, body, methodData, e) {
+                    function (o, body, methodData, e) {
+                        var d = {
+                            title: 'Internal Failure (4)',
+                            errors: e,
+                        };
                         typeof error === 'function'
-                            ? _.bind(error, this)(data, o, body, methodData)
-                            : BackboneApi.error(
-                                  data?.error,
-                                  0,
-                                  data?.response?.statusCode || 500,
-                              );
+                            ? _.bind(error, this)(d, o, body, methodData)
+                            : BackboneApi.error(e, 0, 500);
                     },
-                    data,
                     o,
                     this._req.body,
                     methodData,
