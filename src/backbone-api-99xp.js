@@ -1,8 +1,7 @@
 // Micro Service integrator plus advanced validation, formatting and control over process.
-// Mix of [express](https://github.com/expressjs/express), 
-// [validate-99xp](https://github.com/brunnofoggia/validate-99xp), 
+// Mix of [express](https://github.com/expressjs/express),
+// [validate-99xp](https://github.com/brunnofoggia/validate-99xp),
 // [backbone-request-99xp](https://github.com/brunnofoggia/backbone-request-99xp)
-
 
 // CODE DOCUMENTED BELOW
 // --------------
@@ -38,7 +37,7 @@ var extended = {
         //                pass: '',
         //            },
         ////            method: {}, if I dont set it, it will use a generic one
-        //            
+        //
         //        },
         //        _sample: Sample
         //        _sample: {
@@ -55,7 +54,8 @@ var extended = {
             return BackboneApi.error('auth method is not set');
         }
 
-        o.headers.Authorization = 'Bearer ' + this.data[this.auth][this.tokenField];
+        o.headers.Authorization =
+            'Bearer ' + this.data[this.auth][this.tokenField];
 
         return o;
     },
@@ -71,13 +71,14 @@ var extended = {
         // set options applying default options and ignoring router parameters
         this.data = {};
         this.dataSent = {};
-        
+
         this.options = _.defaults(_.omit(o, 'req', 'res'), {
-            autoexec: !!o.method
+            autoexec: !!o.method,
         });
 
         // keep method as an array to have a single way on processing
-        typeof this.options.method === 'string' && (this.options.method = [this.options.method]);
+        typeof this.options.method === 'string' &&
+            (this.options.method = [this.options.method]);
         // autoexec if isn't asked not to do it
         this.options.autoexec && this.execAll();
     },
@@ -108,7 +109,7 @@ var extended = {
         // pre validate input
         vErr = this.validate(this._req.body || {}, {
             methodData: methodData,
-            validationsKey: 'inputValidations'
+            validationsKey: 'inputValidations',
         });
         // dispach validation errors
         if (vErr !== null) {
@@ -116,10 +117,10 @@ var extended = {
         }
 
         methodData = this.methodDataCompose(methodData);
-        
+
         // validate data
         vErr = this.validate(methodData.sendData, {
-            methodData: methodData
+            methodData: methodData,
         });
         // dispach validation errors
         if (vErr !== null) {
@@ -135,7 +136,9 @@ var extended = {
         }
         // if method is not public and there's no authentication set output an error
         else if (!this.auth) {
-            return BackboneApi.error(`method "${method}" is not set as public but auth is not set`);
+            return BackboneApi.error(
+                `method "${method}" is not set as public but auth is not set`,
+            );
         }
         // execute authentication and requested method after if
         return this.exec(this.auth, calledFn, error);
@@ -145,81 +148,191 @@ var extended = {
         this.setApiCall(methodData);
         // request data
         this.dataSent[method] = methodData.sendData;
-        var globalHeaders = _.result2(this, 'globalHeaders', {}, [methodData], this),
-            globalOptions = _.result2(this, 'globalDefaultOptions', {}, [methodData], this),
-            o = _.defaults2({
-                method: methodData.method, // http method
-                data: methodData.sendData, // request body
-                headers: _.result2(methodData, 'headers', globalHeaders, [methodData], this)
-            }, globalOptions);
+        var globalHeaders = _.result2(
+                this,
+                'globalHeaders',
+                {},
+                [methodData],
+                this,
+            ),
+            globalOptions = _.result2(
+                this,
+                'globalDefaultOptions',
+                {},
+                [methodData],
+                this,
+            ),
+            o = _.defaults2(
+                {
+                    method: methodData.method, // http method
+                    data: methodData.sendData, // request body
+                    headers: _.result2(
+                        methodData,
+                        'headers',
+                        globalHeaders,
+                        [methodData],
+                        this,
+                    ),
+                },
+                globalOptions,
+            );
 
         // if method is private set headers
         if (!this.isPublic(methodData.public)) {
             o = this.setAuthHeader(o);
         }
-        
+
         // before function that can be set on method config to change options or data
-        var before = _.bind(typeof methodData.before === 'function' ? methodData.before : (c, _o, _methodData) => {
-                c(_o, _methodData);
-            }, this),
+        var beforeError = _.bind(
+                _.partial(
+                    function (data, o, body, methodData, e) {
+                        typeof error === 'function'
+                            ? _.bind(error, this)(data, o, body, methodData)
+                            : BackboneApi.error(
+                                  data?.error,
+                                  0,
+                                  data?.response?.statusCode || 500,
+                              );
+                    },
+                    data,
+                    o,
+                    this._req.body,
+                    methodData,
+                ),
+                this,
+            ),
+            before = _.bind(
+                typeof methodData.before === 'function'
+                    ? methodData.before
+                    : (c, _o, _methodData) => {
+                          c(_o, _methodData);
+                      },
+                this,
+            ),
             // request function executed after before callabck
-            request = _.bind(_.partial((_method, _methodData, _success, _error, _o) => {
-                // listeners for success or error
-                this.once(['sync', _.bind(() => {
-                    // store execution results with method name in data object
-                    this.data[_method] = this.attributes;
-                    // empty attributes for next execution
-                    this.attributes = {};
+            request = _.bind(
+                _.partial(
+                    (_method, _methodData, _success, _error, _o) => {
+                        // listeners for success or error
+                        this.once(
+                            [
+                                'sync',
+                                _.bind(() => {
+                                    // store execution results with method name in data object
+                                    this.data[_method] = this.attributes;
+                                    // empty attributes for next execution
+                                    this.attributes = {};
 
-                    // handle possible errors inside callbacks
-                    try {
-                        typeof _methodData.success === 'function' && _.bind(_methodData.success, this)(_o, this._req.body, _methodData);
-                        typeof _success === 'function' && _.bind(_success, this)(_o, this._req.body, _methodData);
-                    } catch (e) {
-                        var data = { error: 'Internal Failure (1)' };
-                        typeof _error === 'function' ? _error(data) : (BackboneApi.error(data));
-                    }
-                }, this)], ['error', _.bind((model, data) => {
-                    // handle possible errors inside callbacks
-                    try {
-                        /*console.error('Internal Failure 2a');*/
-                        typeof _methodData.error === 'function' && _.bind(_methodData.error, this)(data, _o, this._req.body, _methodData);
-                        typeof _error === 'function' ? _.bind(_error, this)(data, _o, this._req.body, _methodData) : (BackboneApi.error(data?.error, 0, data?.response?.statusCode || 500));
-                    } catch (e) {
-                        /*console.error('Internal Failure 3');*/
-                        /*console.error(e);*/
-                        BackboneApi.error({
-                            title: 'Internal Server Error',
-                            errors: e
-                        }, 3);
-                    }
-                }, this)
-                ]);
+                                    // handle possible errors inside callbacks
+                                    try {
+                                        typeof _methodData.success ===
+                                            'function' &&
+                                            _.bind(_methodData.success, this)(
+                                                _o,
+                                                this._req.body,
+                                                _methodData,
+                                            );
+                                        typeof _success === 'function' &&
+                                            _.bind(_success, this)(
+                                                _o,
+                                                this._req.body,
+                                                _methodData,
+                                            );
+                                    } catch (e) {
+                                        var data = {
+                                            error: 'Internal Failure (1)',
+                                        };
+                                        typeof _error === 'function'
+                                            ? _error(data)
+                                            : BackboneApi.error(data);
+                                    }
+                                }, this),
+                            ],
+                            [
+                                'error',
+                                _.bind((model, data) => {
+                                    // handle possible errors inside callbacks
+                                    try {
+                                        /*console.error('Internal Failure 2a');*/
+                                        typeof _methodData.error ===
+                                            'function' &&
+                                            _.bind(_methodData.error, this)(
+                                                data,
+                                                _o,
+                                                this._req.body,
+                                                _methodData,
+                                            );
+                                        typeof _error === 'function'
+                                            ? _.bind(_error, this)(
+                                                  data,
+                                                  _o,
+                                                  this._req.body,
+                                                  _methodData,
+                                              )
+                                            : BackboneApi.error(
+                                                  data?.error,
+                                                  0,
+                                                  data?.response?.statusCode ||
+                                                      500,
+                                              );
+                                    } catch (e) {
+                                        /*console.error('Internal Failure 3');*/
+                                        /*console.error(e);*/
+                                        BackboneApi.error(
+                                            {
+                                                title: 'Internal Server Error',
+                                                errors: e,
+                                            },
+                                            3,
+                                        );
+                                    }
+                                }, this),
+                            ],
+                        );
 
-                // execute http request
-                this.save(null, _o);
-            }, method, methodData, success, error), this);
+                        // execute http request
+                        this.save(null, _o);
+                    },
+                    method,
+                    methodData,
+                    success,
+                    error,
+                ),
+                this,
+            );
 
         // handle possible errors inside before function
         try {
-            before(request, o, methodData, error);
+            var rPromise = before(request, o, methodData, error);
+            if (rPromise && rPromise instanceof Promise) {
+                rPromise
+                    .then((f) => f)
+                    .catch((e) => {
+                        beforeError(e);
+                    });
+            }
         } catch (e) {
             var data = {
                 title: 'Internal Failure (4)',
-                errors: e
+                errors: e,
             };
-            typeof error === 'function' ? _.bind(error, this)(data, o, this._req.body, methodData) : (BackboneApi.error(data?.error, 0, data?.response?.statusCode || 500));
+
+            beforeError(e);
         }
     },
     // getter for methods data. ensure data for method asked is set
     methodData(method) {
         if (!method || !_.result(this, 'methods')[method]) {
-            return BackboneApi.error('Make sure you\'ve set your method and it\'s data');
+            return BackboneApi.error(
+                'Make sure you have set your method and its data',
+            );
         }
 
         var methodData = _.result(this, 'methods')[method] || {};
         if (!methodData.path) {
-            BackboneApi.error('Make sure you\'ve set a path for method ' + method + '\'');
+            BackboneApi.error(
+                'Make sure you have set a path for method "' + method + '"',
+            );
         }
         methodData.name = method;
         return methodData;
@@ -233,7 +346,8 @@ var extended = {
     setHttpMethod(methodData) {
         var data = methodData.sendData;
         methodData = _.defaults(methodData, {
-            method: (typeof data === 'object' && _.size(data) > 0 ? 'POST' : 'GET')
+            method:
+                typeof data === 'object' && _.size(data) > 0 ? 'POST' : 'GET',
         });
         methodData.method = methodData.method.toUpperCase();
 
@@ -241,13 +355,21 @@ var extended = {
     },
     // get "data" from method configuration (can be an object or function) or req.body instead
     getMethodInput(methodData) {
-        return _.result2(methodData, 'data', this._req.body || {}, [_.clone(this._req.body), methodData], this);
+        return _.result2(
+            methodData,
+            'data',
+            this._req.body || {},
+            [_.clone(this._req.body), methodData],
+            this,
+        );
     },
     // replaces common behavior of backbone to ensure no id nonwanted will be added in Api URLs
     url() {
-        return _.result(this, 'urlRoot') ||
+        return (
+            _.result(this, 'urlRoot') ||
             _.result(this.collection, 'url') ||
-            BackboneApi.urlError();
+            BackboneApi.urlError()
+        );
     },
     // set asked method data for the request to be executed
     setApiCall(methodData) {
@@ -259,13 +381,13 @@ var extended = {
             data = _.extend({}, _.clone(this.data), {
                 _model: this,
                 _input: methodData.sendData,
-                _params: this._req.params
+                _params: this._req.params,
             }),
-            pathfix = new RegExp('((?<!\:)\/{1,})', 'g');
+            pathfix = new RegExp('((?<!:)/{1,})', 'g');
 
         path = _.template(path)(data);
 
-        return this.urlRoot = [host, path].join('/').replace(pathfix, '/');
+        return (this.urlRoot = [host, path].join('/').replace(pathfix, '/'));
     },
     // Customization of sync to use BackboneRequest.sync
     sync(method, model, options) {
@@ -273,17 +395,23 @@ var extended = {
         var args = [method, model, options];
         return BackboneRequest.sync.apply(this, args);
     },
-    // Avoid response arrays from being converted to assoc objects 
+    // Avoid response arrays from being converted to assoc objects
     set(models, options) {
-      var isArray = _.isArray(models),
-          args = [models, options],
-          r = BackboneRequest.Model.prototype.set.apply(this, args);
-      isArray && (this.attributes = _.toArray(this.attributes));
-      return r;
+        var isArray = _.isArray(models),
+            args = [models, options],
+            r = BackboneRequest.Model.prototype.set.apply(this, args);
+        isArray && (this.attributes = _.toArray(this.attributes));
+        return r;
     },
     // inherit validations from method configuration
     validations(a, o) {
-        var vl = _.result2(o.methodData, o.validationsKey || 'validations', {}, [a, o], this);
+        var vl = _.result2(
+            o.methodData,
+            o.validationsKey || 'validations',
+            {},
+            [a, o],
+            this,
+        );
         return vl;
     },
     // Skip own validations. The ones that matter are method validations
@@ -292,15 +420,19 @@ var extended = {
     },
     // Dispatcher of validation errors
     validationErrors(err) {
-        throw new ExceptionResponse({
-            title: 'Invalid Data',
-            errors: err
-        }, 0, 400);
+        throw new ExceptionResponse(
+            {
+                title: 'Invalid Data',
+                errors: err,
+            },
+            0,
+            400,
+        );
     },
     // Store req and res objects from express router. Those are necessary to access input data and to send information to the client
     setParameters(o) {
-        var {req, res, params, body} = o;
-        this._req = req || {params: params || {}, body: body || {}};
+        var { req, res, params, body } = o;
+        this._req = req || { params: params || {}, body: body || {} };
         BackboneApi._res = this._res = res;
     },
 };
@@ -311,30 +443,35 @@ _.map(['Model', 'Collection'], (x) => {
 });
 
 // Throw an error when a URL is needed, and none is supplied.
-BackboneApi.urlError = function(code) {
+BackboneApi.urlError = function (code) {
     if (code === 2) {
-        BackboneApi.error('A "path" property must be specified in methods list for the current method');
+        BackboneApi.error(
+            'A "path" property must be specified in methods list for the current method',
+        );
     }
     BackboneApi.error('A "urlHost" property or function must be specified');
 };
 
 // Throw an error when some DATA is needed, and none is supplied.
-BackboneApi.error = function(err, code = 0, status = 500) {
+BackboneApi.error = function (err, code = 0, status = 500) {
     console.error(err);
-    throw new ExceptionResponse({
-        title: 'Internal Server Error',
-        errors: err
-    }, code, status);
+    throw new ExceptionResponse(
+        {
+            title: 'Internal Server Error',
+            errors: err,
+        },
+        code,
+        status,
+    );
 };
 
 // Map from CRUD to HTTP for our default `Backbone.sync` implementation.
 var methodMap = {
-    'POST': 'create',
-    'PUT': 'update',
-    'PATCH': 'patch',
-    'DELETE': 'delete',
-    'GET': 'read'
+    POST: 'create',
+    PUT: 'update',
+    PATCH: 'patch',
+    DELETE: 'delete',
+    GET: 'read',
 };
-
 
 export default BackboneApi;
