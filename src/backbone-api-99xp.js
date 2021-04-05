@@ -381,6 +381,7 @@ var extended = {
                 _model: this,
                 _input: methodData.sendData,
                 _params: this._req.params,
+                _options: this.options,
             }),
             pathfix = new RegExp('((?<!:)/{1,})', 'g');
 
